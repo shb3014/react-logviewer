@@ -87,6 +87,7 @@ export interface LazyLogProps {
      * Enable the search feature.
      */
     enableSearch?: boolean;
+    headerHeight?:number;
     /**
      * If true, search like a browser search - enter jumps to the next line
      * with the searched term, shift + enter goes backwards.
@@ -1020,12 +1021,18 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
     };
 
     calculateListHeight = (autoSizerHeight: number) => {
-        const { height, enableSearch } = this.props;
+        const { height, enableSearch,headerHeight } = this.props;
 
         if (enableSearch) {
             return height === "auto"
                 ? autoSizerHeight - SEARCH_BAR_HEIGHT
                 : Number(height) - SEARCH_BAR_HEIGHT;
+        }
+
+        if (headerHeight) {
+            return height === "auto"
+                ? autoSizerHeight - headerHeight
+                : Number(height) - headerHeight;
         }
 
         return height === "auto" ? autoSizerHeight : height;
@@ -1047,7 +1054,7 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
     }
 
     render() {
-        const { enableSearch } = this.props;
+        const { enableSearch} = this.props;
         const {
             resultLines,
             isFilteringLinesWithMatches,
@@ -1084,8 +1091,7 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
                         iconFindPrevious={this.props.iconFindPrevious}
                     />
                 )}
-
-                {/* 
+                {/*
                  // @ts-ignore */}
                 <AutoSizer
                     disableHeight={this.props.height !== "auto"}
@@ -1118,7 +1124,7 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
                                     });
                                 }}
                             >
-                                {/* 
+                                {/*
                                  // @ts-ignore */}
                                 {this.renderRow}
                             </VariableSizeList>

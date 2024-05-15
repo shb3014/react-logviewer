@@ -4,11 +4,11 @@
 }
 
 .line:hover {
-  background-color: #444444;
+  background-color: rgb(240,240,240);
 }
 
 .lineHighlight {
-  background-color: #666666;
+  background-color: rgb(238, 238, 153);
 }
 
 .lineSelectable {

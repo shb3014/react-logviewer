@@ -4,20 +4,22 @@
     justify-content: flex-end;
     font-family: "Monaco", monospace;
     font-size: 12px;
-    background-color: #222222;
-    color: #d6d6d6;
-    padding: 10px;
+    background-color: rgb(240,240,240);
+    color: rgb(40,40,40);
+    height: 30px;
+    /*padding: 10px;*/
 }
 
 .searchInput {
-    background-color: #464646;
-    color: #d6d6d6;
+    background-color: rgb(255,255,255);
+    color: rgb(40,40,40);
     height: 20px;
     min-width: 200px;
     font-size: 12px;
     padding: 2px 5px;
-    border: 1px solid #4e4e4e;
+    border: 1px solid rgb(200,200,200);
     margin-right: 10px;
+    border-radius: 5px;
 }
 
 .active {
