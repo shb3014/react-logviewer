@@ -83,6 +83,7 @@ export interface LazyLogProps {
      * Enable hyperlinks to be discovered in log text and made clickable links. Default is false.
      */
     enableLinks?: boolean;
+    customLinkCb?: Function;
     /**
      * Enable the search feature.
      */
@@ -939,6 +940,7 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
             enableGutters,
             enableLineNumbers,
             enableLinks,
+            customLinkCb
         } = this.props;
         const {
             highlight,
@@ -971,6 +973,7 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
                 enableGutters={enableGutters}
                 enableLineNumbers={enableLineNumbers}
                 enableLinks={enableLinks}
+                customLinkCb={customLinkCb}
                 formatPart={this.handleFormatPart(number)}
                 gutter={gutter ? gutter[number] : undefined}
                 highlight={highlight?.includes(number)}

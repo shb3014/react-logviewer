@@ -33,6 +33,7 @@ export interface LineContentProps {
      * Enable hyperlinks to be discovered in log text and made clickable links. Default is false.
      */
     enableLinks?: boolean;
+    customLinkCb?: Function;
 }
 
 /**
@@ -74,6 +75,7 @@ export default class LineContent extends Component<LineContentProps, any> {
                             format={formatPart}
                             key={`line-${number}-${n}`}
                             enableLinks={this.props.enableLinks}
+                            customLinkCb={this.props.customLinkCb}
                         />
                     ))}
             </span>

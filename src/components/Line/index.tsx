@@ -32,6 +32,7 @@ export interface LineProps {
      * Enable hyperlinks to be discovered in log text and made clickable links. Default is false.
      */
     enableLinks?: boolean;
+    customLinkCb?: Function;
     formatPart?: ((text: string) => ReactNode) | undefined;
     onLineNumberClick?: MouseEventHandler<HTMLAnchorElement> | undefined;
     /**
@@ -104,6 +105,7 @@ export default class Line extends Component<LineProps, any> {
                     data={data}
                     onClick={onLineContentClick}
                     enableLinks={this.props.enableLinks}
+                    customLinkCb={this.props.customLinkCb}
                 />
             </div>
         );

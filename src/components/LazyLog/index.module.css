@@ -1,12 +1,14 @@
 .lazyLog {
     overflow: auto !important;
-    font-family: "Monaco", monospace;
+    font-family: inherit;
+    /*font-family: SimSun, Arial, sans-serif;*/
     font-size: 12px;
     margin: 0;
     white-space: pre;
     background-color: #222222;
     color: #ffffff;
-    font-weight: 400;
+    font-weight: 500;
+    /*font-weight: 400;*/
     will-change: initial;
     outline: none;
 }

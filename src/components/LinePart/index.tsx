@@ -1,15 +1,15 @@
-import React, { CSSProperties, Component, ReactNode } from "react";
+import React, {CSSProperties, Component, ReactNode} from "react";
 
 import styles from "./index.module.css";
 
 export interface LinePartCss {
     foreground?: string | number;
-    bold?: string;
+    bold?: boolean;
     background?: string;
-    italic?: string;
-    underline?: string;
+    italic?: boolean;
+    underline?: boolean;
     email?: boolean;
-    link?: boolean;
+    link?: string;
     text: string;
 }
 
@@ -36,6 +36,10 @@ const getClassName = (part: LinePartCss) => {
         className.push(styles.underline);
     }
 
+    if (part.link) {
+        className.push(styles.blue);
+    }
+
     return className.join(" ");
 };
 
@@ -53,6 +57,7 @@ export interface LinePartProps {
      * Enable hyperlinks to be discovered in log text and made clickable links. Default is false.
      */
     enableLinks?: boolean;
+    customLinkCb?: Function;
     /**
      * Execute a function against each line part's
      * `text` property in `data` to process and
@@ -75,18 +80,35 @@ export default class LinePart extends Component<LinePartProps, any> {
     };
 
     render() {
-        const { format, part, style } = this.props;
+        const {format, part, style} = this.props;
         const partText = part.text;
         const partClassName = getClassName(part);
         const renderedText = format ? format(partText) : partText;
 
         if (this.props.enableLinks) {
             if (part.link) {
+                if (this.props.customLinkCb) {
+                    return (
+                        <span style={{cursor: 'default'}}>
+                            <a className={partClassName}
+                               onClick={() => {
+                                   this.props.customLinkCb && this.props.customLinkCb(part.link)
+                               }}
+                               style={{...style, color: 'rgb(0,109,204)', cursor: 'pointer'}}>
+                                {renderedText}
+                            </a>
+                        </span>
+                    )
+                }
                 return (
                     <span>
                         <a
                             className={partClassName}
-                            href={partText}
+                            style={{...style, color: 'rgb(0,109,204)'}}
+                            onClick={() => {
+                                console.log(part.link)
+                            }}
+                            href={part.link}
                             target="_blank"
                             rel="noopener noreferrer"
                         >
@@ -111,9 +133,9 @@ export default class LinePart extends Component<LinePartProps, any> {
         }
 
         return (
-            <span className={partClassName} style={style}>
+            <span className={partClassName} style={{...style, cursor: 'default'}}>
                 {renderedText}
-                {this.props.enableLinks ? " " : null}
+                {/*{this.props.enableLinks ? " " : null}*/}
             </span>
         );
     }
