@@ -296,14 +296,15 @@ export const parseLinks = (lines: any[]) => {
     const result: LinePartCss[] = [];
 
     lines.forEach((line) => {
-        let match = regex.exec(line.text)
-        if (match !== null) {
-            // Extract URL and link text from the match
+        let match;
+        let endIndex = 0;
+
+        while (match =regex.exec(line.text)){
             const url = match[1];
             const linkText = match[2];
             // Push the extracted data to the links array
-            const prePart = line.text.substring(0, match.index);
-            const postPart = line.text.substring(match.index + match[0].length);
+            const prePart = line.text.substring(endIndex, match.index);
+            endIndex = match.index + match[0].length;
 
             if (prePart) {
                 result.push({
@@ -319,16 +320,12 @@ export const parseLinks = (lines: any[]) => {
                 underline: true,
             });
 
-            if (postPart) {
-                result.push({
-                    ...line,
-                    text: postPart,
-                });
-            }
-        } else {
-
-            result.push(line);
         }
+        result.push({
+            ...line,
+            text: line.text.substring(endIndex)
+        });
+
     });
 
     return result;
