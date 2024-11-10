@@ -1,12 +1,12 @@
 import { List } from "immutable";
 import mitt from "mitt";
 
-import { WebsocketOptions } from "../LazyLog";
+import { EventSourceOptions } from "../LazyLog";
 import { encode } from "./encoding";
 import { bufferConcat, convertBufferToLines } from "./utils";
 
-export default (url: string | URL, options: WebsocketOptions) => {
-    const { onOpen, onClose, onError, formatMessage } = options;
+export default (url: string | URL, options: EventSourceOptions) => {
+    const { withCredentials, onOpen, onClose, onError, formatMessage } = options;
     const emitter = mitt();
     let encodedLog = new Uint8Array();
     let overage: any = null;
@@ -38,14 +38,15 @@ export default (url: string | URL, options: WebsocketOptions) => {
 
     emitter.on("start", () => {
         try {
-            // try to connect to websocket
-            const socket = new WebSocket(url);
+            // try to connect to eventSource
+            const eventSource = new EventSource(url, { withCredentials });
 
-            socket.addEventListener("open", (e) => {
+            eventSource.addEventListener("open", (e) => {
                 // relay on open events if a handler is registered
-                onOpen && onOpen(e, socket);
+                onOpen && onOpen(e, eventSource);
             });
-            socket.addEventListener("close", (e) => {
+
+            eventSource.addEventListener("close", (e) => {
                 onClose && onClose(e);
                 if(!aborted && options.reconnect) {
                     const timeout = options.reconnectWait ?? 1;
@@ -53,11 +54,11 @@ export default (url: string | URL, options: WebsocketOptions) => {
                 }
             });
 
-            socket.addEventListener("error", (err) => {
+            eventSource.addEventListener("error", (err) => {
                 onError && onError(err);
             });
 
-            socket.addEventListener("message", (e) => {
+            eventSource.addEventListener("message", (e) => {
                 let msg = formatMessage ? formatMessage(e.data) : e.data;
 
                 if (typeof msg !== "string") {
@@ -68,11 +69,6 @@ export default (url: string | URL, options: WebsocketOptions) => {
                 msg = msg.endsWith("\n") ? msg : `${msg}\n`;
 
                 emitter.emit("data", msg);
-            });
-
-            emitter.on("abort", () => {
-                aborted = true;
-                socket.close()
             });
         } catch (err) {
             emitter.emit("error", err);

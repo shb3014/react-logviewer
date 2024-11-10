@@ -20,6 +20,7 @@ import {
     searchFormatPart,
 } from "../Utils/utils";
 import websocket from "../Utils/websocket";
+import eventsource from "../Utils/eventsource";
 import styles from "./index.module.css";
 
 export interface WebsocketOptions {
@@ -36,9 +37,50 @@ export interface WebsocketOptions {
      */
     onError?: ((e: Event) => void) | undefined;
     /**
-     * Callback allback which formats the websocket data stream.
+     * Callback which formats the websocket data stream.
      */
     formatMessage?: ((message: any) => string) | undefined;
+    /**
+     * Set to true, to reconnect the WebSocket automatically.
+     */
+    reconnect?: boolean;
+    /**
+     * Set the time to wait between reconnects in seconds.
+     * Default is 1s
+     */
+    reconnectWait?: number;
+}
+
+export interface EventSourceOptions {
+    /**
+     * Boolean indicating if CORS should be set to include credentials
+     */
+    withCredentials?: boolean;
+    /**
+     * Callback when the eventsource is opened
+     */
+    onOpen?: ((e: Event, eventSource: EventSource) => void) | undefined;
+    /**
+     * Callback when the eventsource is closed
+     */
+    onClose?: ((e: Event) => void) | undefined;
+    /**
+     * Callback when the eventsource has an error
+     */
+    onError?: ((e: Event) => void) | undefined;
+    /**
+     * Callback which formats the eventsource data stream.
+     */
+    formatMessage?: ((message: any) => string) | undefined;
+    /**
+     * Set to true, to reconnect the EventSource automatically.
+     */
+    reconnect?: boolean;
+    /**
+     * Set the time to wait between reconnects in seconds.
+     * Default is 1s
+     */
+    reconnectWait?: number;
 }
 
 export interface ErrorStatus extends Error {
@@ -194,6 +236,17 @@ export interface LazyLogProps {
      * @param {React.MouseEvent<HTMLElement>} event - Browser event.
      */
     onLineContentClick?(event: React.MouseEvent<HTMLSpanElement>): void;
+
+    /**
+     * Callback to invoke on user scroll. Args matches the ScrollFollow onScroll callback.
+     * @param args
+     */
+    onScroll?(args: {
+        scrollTop: number;
+        scrollHeight: number;
+        clientHeight: number;
+    }): void;
+
     /**
      * Number of rows to render above/below the visible bounds of the list.
      * This can help reduce flickering during scrolling on
@@ -244,6 +297,15 @@ export interface LazyLogProps {
      * Options object which will be passed through to websocket.
      */
     websocketOptions?: WebsocketOptions;
+    /**
+     * Set to `true` to specify that url is an eventsource URL.
+     * Defaults to `false` to download data until completion.
+     */
+    eventsource?: boolean;
+    /**
+     * Options object which will be passed through to evensource.
+     */
+    eventsourceOptions?: EventSourceOptions;
     /**
      * Set the width in pixels for the component.
      * Defaults to `'auto'` if unspecified.
@@ -313,6 +375,8 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
         style: {},
         websocket: false,
         websocketOptions: {},
+        eventsource: false,
+        eventsourceOptions: {},
         width: "auto",
     };
 
@@ -382,6 +446,13 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
     componentDidMount() {
         this.setState({ listRef: React.createRef() });
         this.request();
+        if (this.props.scrollToLine) {
+            setTimeout(() => {
+                if (this.state.listRef && this.state.listRef.current) {
+                    this.handleScrollToLine(this.props.scrollToLine);
+                }
+            }, 100);
+        }
     }
 
     componentDidUpdate(prevProps: LazyLogProps, prevState: LazyLogState) {
@@ -402,9 +473,16 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
             const update = () => {
                 const newPosition = this.state.scrollOffset;
                 this.state.listRef?.current?.scrollToItem(newPosition, "auto");
-                this.state.listRef?.current?.forceUpdate();
             };
             update();
+        }
+
+        // If follow is activated, and we're not currently searching, scroll to offset
+        if (this.props.follow && !this.state.isSearching) {
+            this.state.listRef?.current?.scrollToItem(
+                this.state.scrollToIndex + (this.props?.extraLines || 0),
+                "auto"
+            );
         }
 
         if (
@@ -428,6 +506,13 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
         ) {
             this.props.onHighlight(this.state.highlight!);
         }
+
+        if (
+            this.props.scrollToLine &&
+            prevProps.scrollToLine !== this.props.scrollToLine
+        ) {
+            this.handleScrollToLine(this.props.scrollToLine);
+        }
     }
 
     componentWillUnmount() {
@@ -438,13 +523,19 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
         const {
             stream: isStream,
             websocket: isWebsocket,
+            eventsource: isEventsource,
             url,
             fetchOptions,
             websocketOptions,
+            eventsourceOptions,
         } = this.props;
 
         if (isWebsocket) {
             return websocket(url!, websocketOptions!);
+        }
+
+        if (isEventsource) {
+            return eventsource(url!, eventsourceOptions!);
         }
 
         if (isStream) {
@@ -490,10 +581,10 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
 
     handleUpdate = ({ lines: moreLines, encodedLog }: any) => {
         this.encodedLog = encodedLog;
-        const { scrollToLine, follow, stream, websocket } = this.props;
+        const { scrollToLine, follow, stream, websocket, eventsource } = this.props;
 
-        // handle stream and socket updates batched update mode
-        if (stream || websocket) {
+        // handle stream, socket and eventsource updates batched update mode
+        if (stream || websocket || eventsource) {
             this.setState((state, props) => {
                 const { scrollToLine, follow } = props;
                 const { count: previousCount } = state;
@@ -623,7 +714,6 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
             scrollToLine,
         });
         this.state.listRef?.current?.scrollToItem(scrollToLine, "auto");
-        this.state.listRef?.current?.forceUpdate();
     }
 
     handleEnterPressed = () => {
@@ -698,9 +788,9 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
 
     handleSearch = (keywords: string | undefined) => {
         const { resultLines, searchKeywords } = this.state;
-        const { caseInsensitive, stream, websocket } = this.props;
+        const { caseInsensitive, stream, websocket, eventsource } = this.props;
         const currentResultLines =
-            !stream && !websocket && keywords === searchKeywords
+            !stream && !websocket && !eventsource && keywords === searchKeywords
                 ? resultLines
                 : searchLines(keywords, this.encodedLog!, caseInsensitive!);
 
@@ -940,7 +1030,6 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
             enableGutters,
             enableLineNumbers,
             enableLinks,
-            customLinkCb
         } = this.props;
         const {
             highlight,
@@ -959,6 +1048,12 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
 
         if (linesToRender?.size! <= 0) {
             return this.renderNoRows();
+        }
+
+        if (!number) {
+            // A falsy number can only be a result of displaying filtered lines with extraLines, and this row is an extraLine.
+            // In this case, do not render anything.
+            return undefined;
         }
 
         const decodedLine = decode(linesToRender?.get(options.index));
@@ -1057,7 +1152,7 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
     }
 
     render() {
-        const { enableSearch} = this.props;
+        const { enableSearch } = this.props;
         const {
             resultLines,
             isFilteringLinesWithMatches,
@@ -1094,6 +1189,7 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
                         iconFindPrevious={this.props.iconFindPrevious}
                     />
                 )}
+
                 {/*
                  // @ts-ignore */}
                 <AutoSizer
@@ -1125,6 +1221,24 @@ export default class LazyLog extends Component<LazyLogProps, LazyLogState> {
                                     this.setState({
                                         scrollOffset: options.scrollOffset,
                                     });
+                                    // If there is an onScroll callback, call it.
+                                    if (this.props.onScroll) {
+                                        const args = {
+                                            scrollTop: options.scrollOffset,
+                                            scrollHeight:
+                                                this.getItemSize(0) *
+                                                (rowCount === 0
+                                                    ? rowCount
+                                                    : rowCount +
+                                                      (this.props.extraLines ||
+                                                          0)),
+                                            clientHeight:
+                                                this.calculateListHeight(
+                                                    height
+                                                ) as number,
+                                        };
+                                        this.props.onScroll(args);
+                                    }
                                 }}
                             >
                                 {/*

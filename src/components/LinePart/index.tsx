@@ -11,6 +11,7 @@ export interface LinePartCss {
     email?: boolean;
     link?: string;
     text: string;
+    [key: string]: any;
 }
 
 const getClassName = (part: LinePartCss) => {
@@ -83,7 +84,7 @@ export default class LinePart extends Component<LinePartProps, any> {
         const {format, part, style} = this.props;
         const partText = part.text;
         const partClassName = getClassName(part);
-        const renderedText = format ? format(partText) : partText;
+        const renderedText = format ? format(partText!) : partText!;
 
         if (this.props.enableLinks) {
             if (part.link) {

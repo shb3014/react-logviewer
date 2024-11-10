@@ -1,6 +1,6 @@
-/* eslint-disable no-plusplus, no-continue */
-import {LinePartCss} from "../LinePart";
+import { LinePartCss } from "../LinePart";
 
+/* eslint-disable no-plusplus, no-continue */
 type AnisMap = {
     [key: string]: string;
 };
@@ -51,13 +51,13 @@ const eraseChar = (matchingText: string, result: any[]): any[] => {
     return [matchingText, result];
 };
 
-const ansiparse = (str: string): any[] => {
+const ansiparse = (str: string): LinePartCss[] => {
     let matchingControl = null;
     let matchingData = null;
     let matchingText = "";
     let ansiState = [];
-    let result:LinePartCss[] = [];
-    let state: LinePartCss = {text:''};
+    let result = [];
+    let state: LinePartCss = {};
 
     for (let i = 0; i < str.length; i++) {
         if (matchingControl !== null) {
@@ -65,7 +65,7 @@ const ansiparse = (str: string): any[] => {
                 if (matchingText) {
                     state.text = matchingText;
                     result.push(state);
-                    state = {text:''};
+                    state = { text: "" };
                     matchingText = "";
                 }
 
@@ -98,7 +98,6 @@ const ansiparse = (str: string): any[] => {
                     } else if (ansiCode === "49") {
                         delete state.background;
                     } else if (styles[ansiCode]) {
-                        // @ts-ignore
                         state[styles[ansiCode]] = true;
                     } else if (ansiCode === "22") {
                         state.bold = false;

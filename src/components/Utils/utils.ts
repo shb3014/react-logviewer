@@ -1,7 +1,7 @@
-import {List, Range} from "immutable";
+import { List, Range } from "immutable";
 
 import reactStringReplace from "react-string-replace";
-import {LinePartCss} from "../LinePart";
+import { LinePartCss } from "../LinePart";
 
 export const ENCODED_NEWLINE = 10; // \n
 export const ENCODED_CARRIAGE_RETURN = 13; // \r
@@ -13,12 +13,12 @@ export const isNewline = (current: number) =>
     current === ENCODED_NEWLINE || current === ENCODED_CARRIAGE_RETURN;
 
 export const getScrollIndex = ({
-                                   follow = false,
-                                   scrollToLine = 0,
-                                   previousCount = 0,
-                                   count = 0,
-                                   offset = 0,
-                               }) => {
+    follow = false,
+    scrollToLine = 0,
+    previousCount = 0,
+    count = 0,
+    offset = 0,
+}) => {
     if (follow) {
         return count - 1 - offset;
     } else if (scrollToLine && previousCount > scrollToLine) {
@@ -73,7 +73,7 @@ export const convertBufferToLines = (
     const buffer = previousArray
         ? bufferConcat(previousArray, currentArray)
         : currentArray;
-    const {length} = buffer;
+    const { length } = buffer;
     let lastNewlineIndex = 0;
     let index = 0;
     const lines = List<Uint8Array>().withMutations((lines) => {
@@ -108,7 +108,7 @@ export const convertBufferToLines = (
 };
 
 export const getLinesLengthRanges = (rawLog: Uint8Array) => {
-    const {length} = rawLog;
+    const { length } = rawLog;
     const linesRanges = [];
     let lastNewlineIndex = 0;
     let index = 0;
@@ -253,81 +253,45 @@ const protocolClause = "(((http|ftp)?s?s?)(:)(/{2}))";
 const strictUrlRegex =
     /https?:[/]{2}[^\s"'!*(){}|\\\^<>`]*[^\s"':,.!?{}|\\\^~\[\]`()<>]/;
 
-// export const parseLinksOld = (lines: any[]) => {
-//     const result: LinePartCss[] = [];
-//
-//     lines.forEach((line) => {
-//         const arr = line.text.split(" ");
-//
-//         arr.forEach((text: string) => {
-//             if (text.search(strictUrlRegex) > -1) {
-//                 const email = true;
-//                 const link = true;
-//
-//                 if (text.search(emailRegex) > -1) {
-//                     result.push({ text, email });
-//
-//                     return;
-//                 }
-//
-//                 if (text.search(protocolClause) === -1) {
-//                     result.push({ text: `https://${text}`, link });
-//
-//                     return;
-//                 }
-//
-//                 result.push({
-//                     text,
-//                     link,
-//                 });
-//
-//                 return;
-//             }
-//
-//             result.push({ text });
-//         });
-//     });
-//
-//     return result;
-// };
-
-export const parseLinks = (lines: any[]) => {
-    const regex = /\u001B]8;;(.*?)\u0007(.*?)\u001B]8;;\u0007/g;
+export const parseLinks = (lines: any[]): LinePartCss[] => {
     const result: LinePartCss[] = [];
 
     lines.forEach((line) => {
-        let match;
-        let endIndex = 0;
+        const arr = line.text.split(" ");
 
-        while (match =regex.exec(line.text)){
-            const url = match[1];
-            const linkText = match[2];
-            // Push the extracted data to the links array
-            const prePart = line.text.substring(endIndex, match.index);
-            endIndex = match.index + match[0].length;
+        let found = false;
 
-            if (prePart) {
+        arr.forEach((text: string) => {
+            if (text.search(strictUrlRegex) > -1) {
+                found = true;
+                const email = true;
+                const link = true;
+
+                if (text.search(emailRegex) > -1) {
+                    result.push({ text, email });
+
+                    return;
+                }
+
+                if (text.search(protocolClause) === -1) {
+                    result.push({ text: `https://${text}`, link });
+
+                    return;
+                }
+
                 result.push({
-                    ...line,
-                    text: prePart,
+                    text,
+                    link,
                 });
+
+                return;
             }
-
-            result.push({
-                ...line,
-                text: url,
-                link: linkText,
-                underline: true,
-            });
-
-        }
-        result.push({
-            ...line,
-            text: line.text.substring(endIndex)
         });
 
+        if (!found) {
+            result.push(line);
+        }
     });
 
     return result;
-
-}
+};

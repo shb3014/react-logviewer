@@ -1,11 +1,12 @@
 [![npm](https://img.shields.io/npm/v/%40melloware%2Freact-logviewer?style=for-the-badge&color=green)](https://www.npmjs.com/package/%40melloware/react-logviewer)
+[![NPM Downloads](https://img.shields.io/npm/dm/%40melloware%2Freact-logviewer?style=for-the-badge&color=purple)](https://www.npmjs.com/package/%40melloware/react-logviewer)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MPL-2.0)
 ![React.js](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 ![Typescript](https://img.shields.io/badge/typescript-%23323330.svg?style=for-the-badge&logo=typescript&logoColor=%23F7DF1E) 
 
 # React LogViewer
 
-React component that loads and views remote text in the browser lazily and efficiently. Logs can be loaded from static text, a URL, or a WebSocket and including ANSI highlighting.
+React component that loads and views remote text in the browser lazily and efficiently. Logs can be loaded from static text, a URL, a WebSocket, or an EventSource and including ANSI highlighting.
 Forked from [mozilla-frontend-infra/react-lazylog](https://github.com/mozilla-frontend-infra/react-lazylog).
 
 **If you like this project, please consider supporting me ❤️**
@@ -82,18 +83,23 @@ If you are going to be requesting a streaming or chunked response, use the `<Laz
 The `ScrollFollow` component accepts a render prop function which should return a component to render based on the
 function's arguments.
 
+> [!NOTE]  
+> ScrollFollow must be wrapped in an element that contains a fixed height such as a `<div>`
+
 ```jsx
 import React from "react";
 import { render } from "react-dom";
 import { LazyLog, ScrollFollow } from "@melloware/react-logviewer";
 
 render(
+    <div style={{ height: 500, width: 902 }}>
     <ScrollFollow
         startFollowing={true}
         render={({ follow, onScroll }) => (
             <LazyLog url="http://example.log" stream follow={follow} onScroll={onScroll} />
         )}
-    />,
+    />
+    </div>,
     document.getElementById("root"),
 );
 ```
